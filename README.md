@@ -1,6 +1,6 @@
 # Railway Optimization System
 
-A comprehensive ML-powered system for Indian Railways optimization, featuring delay prediction and conflict detection using trained XGBoost models.
+A comprehensive ML-powered system for Indian Railways optimization, featuring delay prediction and conflict detection using trained XGBoost models, with mobile app integration.
 
 ## 🎯 System Overview
 
@@ -9,6 +9,7 @@ This system provides:
 - **Conflict Detection**: Identifies potential conflicts between trains
 - **Risk Assessment**: Combines both models for comprehensive risk analysis
 - **Optimization Recommendations**: Suggests operational actions based on predictions
+- **Mobile App Interface**: React Native app for operators and drivers
 
 ## 🚀 Features
 
