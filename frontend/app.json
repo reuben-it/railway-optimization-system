@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Railway Optimization System",
+    "slug": "railway-optimization",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "railway",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0066cc"
+      }
+    },
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

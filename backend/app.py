@@ -45,6 +45,10 @@ conflict_model = None
 state_manager = None
 prediction_engine = None
 
+# Global storage for operator decisions and driver notifications
+operator_decisions: List[Dict] = []
+driver_notifications: List[Dict] = []
+
 # Define input schemas
 class DelayPredictionInput(BaseModel):
     train_id: str
@@ -131,6 +135,27 @@ class OperatorActionInput(BaseModel):
     action: str  # hold, pass, reroute, reschedule
     operator_id: str
     reason: Optional[str] = None
+
+class OperatorDecisionInput(BaseModel):
+    train_id: str
+    decision: str  # allow_delay, reduce_speed, hold_train, emergency_stop
+    delay_minutes: Optional[float] = None
+    new_speed_limit: Optional[float] = None
+    reason: str
+    operator_id: str
+    priority: Optional[str] = "normal"  # normal, high, critical
+    priority: str = "normal"  # normal, high, critical
+
+class DriverNotification(BaseModel):
+    notification_id: str
+    driver_id: str
+    train_id: str
+    message: str
+    decision_type: str
+    action_required: str
+    timestamp: str
+    status: str = "pending"  # pending, acknowledged, completed
+    operator_id: str
 
 def load_models():
     """Load the trained ML models."""
@@ -1010,6 +1035,140 @@ async def model_info():
     
     return info
 
+# Operator Decision Management Endpoints
+@app.post("/operator/decisions")
+async def make_operator_decision(decision: OperatorDecisionInput):
+    """Record an operator decision and create driver notification."""
+    global operator_decisions, driver_notifications
+    
+    try:
+        # Create decision record
+        decision_record = {
+            "decision_id": f"DEC_{int(time.time())}_{decision.train_id}",
+            "train_id": decision.train_id,
+            "decision": decision.decision,
+            "delay_minutes": decision.delay_minutes,
+            "new_speed_limit": decision.new_speed_limit,
+            "reason": decision.reason,
+            "operator_id": decision.operator_id,
+            "priority": decision.priority,
+            "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+            "status": "active"
+        }
+        
+        operator_decisions.append(decision_record)
+        
+        # Create driver notification
+        notification_id = f"NOT_{int(time.time())}_{decision.train_id}"
+        
+        # Generate appropriate message based on decision
+        action_messages = {
+            "allow_delay": f"Delay of {decision.delay_minutes} minutes approved for train {decision.train_id}. Proceed as scheduled.",
+            "reduce_speed": f"Reduce speed to {decision.new_speed_limit} km/h for train {decision.train_id}. Reason: {decision.reason}",
+            "hold_train": f"Hold train {decision.train_id} at current location. Await further instructions.",
+            "emergency_stop": f"EMERGENCY: Stop train {decision.train_id} immediately. Contact operator."
+        }
+        
+        driver_notification = {
+            "notification_id": notification_id,
+            "driver_id": f"DRIVER_{decision.train_id}",  # Assume driver ID based on train
+            "train_id": decision.train_id,
+            "message": action_messages.get(decision.decision, f"New instruction for train {decision.train_id}: {decision.reason}"),
+            "decision_type": decision.decision,
+            "action_required": decision.decision,
+            "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+            "status": "pending",
+            "operator_id": decision.operator_id,
+            "priority": decision.priority
+        }
+        
+        driver_notifications.append(driver_notification)
+        
+        return {
+            "message": "Decision recorded and driver notified",
+            "decision_id": decision_record["decision_id"],
+            "notification_id": notification_id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error recording operator decision: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/operator/decisions")
+async def get_operator_decisions():
+    """Get all operator decisions."""
+    return {
+        "decisions": operator_decisions,
+        "total_decisions": len(operator_decisions)
+    }
+
+@app.get("/operator/decisions/{train_id}")
+async def get_train_decisions(train_id: str):
+    """Get decisions for a specific train."""
+    train_decisions = [d for d in operator_decisions if d["train_id"] == train_id]
+    return {
+        "train_id": train_id,
+        "decisions": train_decisions,
+        "total_decisions": len(train_decisions)
+    }
+
+# Driver Notification Endpoints
+@app.get("/driver/notifications/{driver_id}")
+async def get_driver_notifications(driver_id: str):
+    """Get notifications for a specific driver."""
+    driver_notifs = [n for n in driver_notifications if n["driver_id"] == driver_id]
+    return {
+        "driver_id": driver_id,
+        "notifications": driver_notifs,
+        "pending_notifications": len([n for n in driver_notifs if n["status"] == "pending"]),
+        "total_notifications": len(driver_notifs)
+    }
+
+@app.get("/driver/notifications/train/{train_id}")
+async def get_train_notifications(train_id: str):
+    """Get notifications for a specific train."""
+    train_notifs = [n for n in driver_notifications if n["train_id"] == train_id]
+    return {
+        "train_id": train_id,
+        "notifications": train_notifs,
+        "total_notifications": len(train_notifs)
+    }
+
+@app.post("/driver/notifications/{notification_id}/acknowledge")
+async def acknowledge_notification(notification_id: str):
+    """Mark a notification as acknowledged by driver."""
+    global driver_notifications
+    
+    for notification in driver_notifications:
+        if notification["notification_id"] == notification_id:
+            notification["status"] = "acknowledged"
+            notification["acknowledged_at"] = time.strftime('%Y-%m-%d %H:%M:%S')
+            return {"message": "Notification acknowledged", "notification_id": notification_id}
+    
+    raise HTTPException(status_code=404, detail="Notification not found")
+
+@app.post("/driver/notifications/{notification_id}/complete")
+async def complete_notification(notification_id: str):
+    """Mark a notification as completed by driver."""
+    global driver_notifications
+    
+    for notification in driver_notifications:
+        if notification["notification_id"] == notification_id:
+            notification["status"] = "completed"
+            notification["completed_at"] = time.strftime('%Y-%m-%d %H:%M:%S')
+            return {"message": "Notification completed", "notification_id": notification_id}
+    
+    raise HTTPException(status_code=404, detail="Notification not found")
+
+@app.get("/driver/notifications")
+async def get_all_notifications():
+    """Get all driver notifications."""
+    return {
+        "notifications": driver_notifications,
+        "total_notifications": len(driver_notifications),
+        "pending_notifications": len([n for n in driver_notifications if n["status"] == "pending"])
+    }
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

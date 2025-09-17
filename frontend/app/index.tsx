@@ -39,10 +39,11 @@ export default function SignIn() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🔐 User Sign In</Text>
+      <Text style={styles.title}>🚂 Railway Optimization System</Text>
+      <Text style={styles.subtitle}>Role-Based Access Control</Text>
 
       <TextInput
-        placeholder="Login ID"
+        placeholder="Login ID (OP123, DR123, etc.)"
         value={loginId}
         onChangeText={setLoginId}
         style={styles.input}
@@ -57,34 +58,80 @@ export default function SignIn() {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/station1")} />
-        <Text style={styles.buttonText}>"Station1"</Text>
-
       <TouchableOpacity style={styles.button} onPress={handleSignIn}>
         <Text style={styles.buttonText}>Sign In</Text>
       </TouchableOpacity>
+
+      <View style={styles.helpContainer}>
+        <Text style={styles.helpTitle}>Demo Accounts:</Text>
+        <Text style={styles.helpText}>Operator: OP123 / op@123</Text>
+        <Text style={styles.helpText}>Driver: DR123 / dr@123</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 30 },
+  container: { 
+    flex: 1, 
+    justifyContent: "center", 
+    alignItems: "center", 
+    padding: 20,
+    backgroundColor: '#f0f8ff'
+  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: "bold", 
+    marginBottom: 10,
+    color: '#1e40af',
+    textAlign: 'center'
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748b',
+    marginBottom: 30,
+    textAlign: 'center'
+  },
   input: {
     width: "100%",
     borderWidth: 1,
     borderColor: "#ddd",
-    borderRadius: 6,
-    padding: 12,
+    borderRadius: 8,
+    padding: 15,
     marginBottom: 15,
     backgroundColor: "white",
+    fontSize: 16,
   },
   button: {
     width: "100%",
-    backgroundColor: "#2563eb",
-    padding: 12,
-    borderRadius: 6,
+    backgroundColor: "#1e40af",
+    padding: 15,
+    borderRadius: 8,
     alignItems: "center",
+    marginTop: 10,
   },
-  buttonText: { color: "white", fontWeight: "bold", fontSize: 16 },
+  buttonText: { 
+    color: "white", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
+  helpContainer: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  helpTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#374151',
+  },
+  helpText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 5,
+  },
 });

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,15 +12,25 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { CriticalSituationsResponse, handleAPIError, HealthResponse, railwayAPI, TrainInfo } from '../../services/api';
+import { CriticalSituationsResponse, handleAPIError, HealthResponse, OperatorDecision, railwayAPI, TrainInfo } from '../../services/api';
 
 export default function OperatorHome() {
+  const router = useRouter();
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [trains, setTrains] = useState<TrainInfo[]>([]);
   const [criticalSituations, setCriticalSituations] = useState<CriticalSituationsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showAddTrain, setShowAddTrain] = useState(false);
+  const [showDecisionModal, setShowDecisionModal] = useState(false);
+  const [selectedTrain, setSelectedTrain] = useState<TrainInfo | null>(null);
+  const [decision, setDecision] = useState({
+    decision: 'allow_delay',
+    delay_minutes: 0,
+    new_speed_limit: 120,
+    reason: '',
+    priority: 'normal'
+  });
   const [newTrain, setNewTrain] = useState({
     train_id: '',
     train_type: 'EXPRESS',
@@ -43,10 +54,15 @@ export default function OperatorHome() {
       ]);
       
       setHealth(healthData);
-      setTrains(trainsData);
+      // Ensure trainsData is an array
+      setTrains(Array.isArray(trainsData) ? trainsData : []);
       setCriticalSituations(criticalData);
     } catch (error) {
+      console.error('Error loading data:', error);
       Alert.alert('Error', handleAPIError(error));
+      // Set default values on error
+      setTrains([]);
+      setCriticalSituations(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -109,6 +125,58 @@ export default function OperatorHome() {
     }
   };
 
+  const makeDecision = async () => {
+    if (!selectedTrain) return;
+    
+    try {
+      const operatorDecision: OperatorDecision = {
+        train_id: selectedTrain.train_id,
+        decision: decision.decision,
+        delay_minutes: decision.delay_minutes || undefined,
+        new_speed_limit: decision.new_speed_limit || undefined,
+        reason: decision.reason,
+        operator_id: 'OP123', // This should come from login context
+        priority: decision.priority
+      };
+
+      const response = await railwayAPI.makeOperatorDecision(operatorDecision);
+      Alert.alert('Decision Recorded', `Decision for train ${selectedTrain.train_id} has been recorded and driver has been notified.`);
+      
+      setShowDecisionModal(false);
+      setSelectedTrain(null);
+      setDecision({
+        decision: 'allow_delay',
+        delay_minutes: 0,
+        new_speed_limit: 120,
+        reason: '',
+        priority: 'normal'
+      });
+      loadData(); // Refresh data
+    } catch (error) {
+      Alert.alert('Error', handleAPIError(error));
+    }
+  };
+
+  const openDecisionModal = (train: TrainInfo) => {
+    setSelectedTrain(train);
+    setShowDecisionModal(true);
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Logout", 
+          style: "destructive",
+          onPress: () => router.replace("/")
+        }
+      ]
+    );
+  };
+
   const getStateColor = (state: string) => {
     switch (state) {
       case 'CRITICAL': return '#ff4444';
@@ -134,8 +202,21 @@ export default function OperatorHome() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>� Station Operator Dashboard</Text>
-        <Text style={styles.subtitle}>Real-time Railway Optimization System</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.title}>🚉 Station Operator Dashboard</Text>
+            <Text style={styles.subtitle}>Real-time Railway Optimization System</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => {
+              console.log("Operator logout button pressed");
+              router.replace("/");
+            }}
+          >
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* System Status */}
@@ -190,7 +271,7 @@ export default function OperatorHome() {
       {/* All Trains */}
       <View style={styles.trainsCard}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>🚆 All Trains ({trains.length})</Text>
+          <Text style={styles.cardTitle}>🚆 All Trains ({Array.isArray(trains) ? trains.length : 0})</Text>
           <TouchableOpacity 
             style={styles.addButton}
             onPress={() => setShowAddTrain(true)}
@@ -199,7 +280,8 @@ export default function OperatorHome() {
           </TouchableOpacity>
         </View>
         
-        {trains.map((train, index) => (
+        {Array.isArray(trains) && trains.length > 0 ? (
+          trains.map((train, index) => (
           <View key={index} style={styles.trainCard}>
             <View style={styles.trainHeader}>
               <Text style={styles.trainId}>🚂 {train.train_id}</Text>
@@ -228,9 +310,21 @@ export default function OperatorHome() {
               >
                 <Text style={styles.actionButtonText}>Recheck</Text>
               </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.decisionButton]}
+                onPress={() => openDecisionModal(train)}
+              >
+                <Text style={styles.actionButtonText}>Decide</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        ))}
+        ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>📭 No trains registered</Text>
+            <Text style={styles.emptyStateSubtext}>Add a train to get started</Text>
+          </View>
+        )}
       </View>
 
       {/* Add Train Modal */}
@@ -281,6 +375,108 @@ export default function OperatorHome() {
           </View>
         </View>
       </Modal>
+
+      {/* Decision Modal */}
+      <Modal visible={showDecisionModal} animationType="slide">
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalTitle}>⚡ Make Decision for Train {selectedTrain?.train_id}</Text>
+          
+          <ScrollView style={styles.modalForm}>
+            <Text style={styles.inputLabel}>Decision Type</Text>
+            <View style={styles.pickerContainer}>
+              {['allow_delay', 'reduce_speed', 'hold_train', 'emergency_stop'].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.pickerOption,
+                    decision.decision === type && styles.pickerOptionSelected
+                  ]}
+                  onPress={() => setDecision({...decision, decision: type})}
+                >
+                  <Text style={[
+                    styles.pickerText,
+                    decision.decision === type && styles.pickerTextSelected
+                  ]}>
+                    {type.replace('_', ' ').toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {decision.decision === 'allow_delay' && (
+              <>
+                <Text style={styles.inputLabel}>Delay Minutes</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter delay in minutes"
+                  value={decision.delay_minutes.toString()}
+                  onChangeText={(text) => setDecision({...decision, delay_minutes: parseFloat(text) || 0})}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+
+            {decision.decision === 'reduce_speed' && (
+              <>
+                <Text style={styles.inputLabel}>New Speed Limit (km/h)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter new speed limit"
+                  value={decision.new_speed_limit.toString()}
+                  onChangeText={(text) => setDecision({...decision, new_speed_limit: parseFloat(text) || 120})}
+                  keyboardType="numeric"
+                />
+              </>
+            )}
+
+            <Text style={styles.inputLabel}>Reason</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Enter reason for this decision"
+              value={decision.reason}
+              onChangeText={(text) => setDecision({...decision, reason: text})}
+              multiline
+              numberOfLines={3}
+            />
+
+            <Text style={styles.inputLabel}>Priority</Text>
+            <View style={styles.pickerContainer}>
+              {['normal', 'high', 'critical'].map((priority) => (
+                <TouchableOpacity
+                  key={priority}
+                  style={[
+                    styles.pickerOption,
+                    decision.priority === priority && styles.pickerOptionSelected
+                  ]}
+                  onPress={() => setDecision({...decision, priority})}
+                >
+                  <Text style={[
+                    styles.pickerText,
+                    decision.priority === priority && styles.pickerTextSelected
+                  ]}>
+                    {priority.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+          
+          <View style={styles.modalButtons}>
+            <TouchableOpacity 
+              style={styles.modalButton}
+              onPress={() => setShowDecisionModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.decisionModalButton]}
+              onPress={makeDecision}
+            >
+              <Text style={styles.modalButtonText}>Send Decision</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -319,6 +515,22 @@ const styles = StyleSheet.create({
     color: '#e6f2ff',
     textAlign: 'center',
     marginTop: 5,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoutButton: {
+    backgroundColor: '#ff4444',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 5,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   statusCard: {
     backgroundColor: 'white',
@@ -454,11 +666,51 @@ const styles = StyleSheet.create({
   recheckButton: {
     backgroundColor: '#6c757d',
   },
+  decisionButton: {
+    backgroundColor: '#ffc107',
+  },
   actionButtonText: {
     color: 'white',
     textAlign: 'center',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  textArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 15,
+    gap: 8,
+  },
+  pickerOption: {
+    backgroundColor: '#e9ecef',
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  pickerOptionSelected: {
+    backgroundColor: '#007bff',
+    borderColor: '#007bff',
+  },
+  pickerText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  pickerTextSelected: {
+    color: 'white',
   },
   modalContainer: {
     flex: 1,
@@ -497,10 +749,30 @@ const styles = StyleSheet.create({
   addModalButton: {
     backgroundColor: '#28a745',
   },
+  decisionModalButton: {
+    backgroundColor: '#dc3545',
+  },
   modalButtonText: {
     color: 'white',
     textAlign: 'center',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
 });
