@@ -1,0 +1,40 @@
+{
+    "total_records": 850,
+    "train_types": {
+        "passenger": 298,
+        "suburban": 277,
+        "freight": 177,
+        "express": 98
+    },
+    "avg_delay": 7.083529411764706,
+    "max_delay": 54,
+    "on_time_percentage": 42.470588235294116,
+    "tsr_percentage": 13.882352941176471,
+    "controller_actions": {
+        "hold": 235,
+        "divert": 233,
+        "none": 203,
+        "prioritize": 140,
+        "reschedule": 39
+    },
+    "delay_by_train_type": {
+        "mean": {
+            "express": 12.979591836734693,
+            "freight": 7.553672316384181,
+            "passenger": 6.181208053691275,
+            "suburban": 5.667870036101083
+        },
+        "median": {
+            "express": 9.0,
+            "freight": 2.0,
+            "passenger": 2.0,
+            "suburban": 3.0
+        },
+        "max": {
+            "express": 54.0,
+            "freight": 48.0,
+            "passenger": 34.0,
+            "suburban": 52.0
+        }
+    }
+}

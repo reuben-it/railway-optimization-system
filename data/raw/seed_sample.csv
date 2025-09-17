@@ -1,0 +1,11 @@
+train_id,train_type,date,section_id,from_station,to_station,scheduled_departure,scheduled_arrival,actual_departure,actual_arrival,delay_minutes,block_length_km,track_type,speed_limit_kmph,rake_length_m,priority_level,headway_seconds,tsr_active,tsr_speed_kmph,platform_assigned,controller_action,conflict_likelihood,propagated_delay_minutes
+T82172,passenger,2025-09-17,SEC007,ADI,NGP,03:45:00,05:14:00,03:45:00,05:14:00,0,145,single,82,515,2,303,N,0,P1,none,0.1,0
+T38406,suburban,2025-09-17,SEC018,ASR,TPTY,17:45:00,18:38:00,17:45:00,18:38:00,0,62,electrified,74,471,2,575,N,0,P5,hold,0.07,0
+T59325,passenger,2025-09-17,SEC011,PNBE,BPL,11:00:00,12:18:00,11:00:00,12:18:00,0,97,electrified,97,517,2,534,N,0,P8,hold,0.81,0
+T77026,suburban,2025-09-17,SEC010,LKO,PNBE,19:30:00,20:59:00,19:30:00,20:59:00,0,109,electrified,67,470,2,600,N,0,P7,hold,0.72,0
+T23134,passenger,2025-09-17,SEC013,ALD,GHY,11:30:00,13:16:00,11:38:00,13:24:00,8,137,single,78,553,2,483,N,0,P6,reschedule,0.15,1
+T32275,freight,2025-09-17,SEC002,BCT,MAS,11:30:00,12:49:00,11:30:00,12:49:00,0,90,double,58,811,3,454,N,0,P7,reschedule,0.79,0
+T19285,suburban,2025-09-17,SEC004,HWH,SBC,02:15:00,04:12:00,02:15:00,04:12:00,0,125,electrified,76,331,2,241,N,0,P7,hold,0.51,0
+T57139,passenger,2025-09-17,SEC010,LKO,PNBE,05:15:00,06:44:00,05:15:00,06:44:00,0,109,double,91,560,2,417,N,0,P5,none,0.89,0
+T10030,suburban,2025-09-17,SEC003,MAS,HWH,07:30:00,09:12:00,07:30:00,09:12:00,0,131,electrified,64,443,2,199,N,0,P7,divert,0.37,0
+T60493,freight,2025-09-17,SEC010,LKO,PNBE,13:30:00,15:03:00,13:30:00,15:03:00,0,109,double,57,862,3,324,N,0,P2,none,0.52,0

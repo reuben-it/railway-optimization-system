@@ -1,0 +1,1 @@
+train_id,train_type,date,section_id,from_station,to_station,scheduled_departure,scheduled_arrival,actual_departure,actual_arrival,delay_minutes,block_length_km,track_type,speed_limit_kmph,rake_length_m,priority_level,headway_seconds,tsr_active,tsr_speed_kmph,platform_assigned,controller_action,conflict_likelihood,propagated_delay_minutes

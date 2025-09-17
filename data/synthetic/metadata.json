@@ -1,0 +1,27 @@
+{
+    "version": "1.0",
+    "total_synthetic": 850,
+    "generation_date": "2025-09-17 15:26:06",
+    "distributions": {
+        "express": {
+            "mean": 8,
+            "std": 5,
+            "max": 60
+        },
+        "passenger": {
+            "mean": 12,
+            "std": 8,
+            "max": 90
+        },
+        "freight": {
+            "mean": 20,
+            "std": 15,
+            "max": 180
+        },
+        "suburban": {
+            "mean": 5,
+            "std": 3,
+            "max": 30
+        }
+    }
+}
