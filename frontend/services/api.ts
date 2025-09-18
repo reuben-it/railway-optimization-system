@@ -51,17 +51,17 @@ export interface TrainInfo {
   scheduled_arrival: string;
   actual_delay: number;
   state: string;
-  last_conflict_prob: number;
-  last_delay_pred: number;
-  last_check: string;
+  last_conflict_prob: number | null;
+  last_delay_pred: number | null;
+  last_check: string | null;
 }
 
 export interface CriticalSituation {
   train_id: string;
   train_type: string;
   current_section: string;
-  conflict_probability: number;
-  delay_prediction: number;
+  conflict_probability: number | null;
+  delay_prediction: number | null;
   consecutive_critical: number;
   needs_immediate_attention: boolean;
 }

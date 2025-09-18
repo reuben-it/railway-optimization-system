@@ -1,18 +1,33 @@
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    Modal,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { CriticalSituationsResponse, handleAPIError, HealthResponse, OperatorDecision, railwayAPI, TrainInfo } from '../../services/api';
+
+// Utility function to safely format numbers
+const safeToFixed = (value: number | null | undefined, decimals: number = 1, suffix: string = ''): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 'N/A';
+  }
+  return value.toFixed(decimals) + suffix;
+};
+
+const safePercentage = (value: number | null | undefined): string => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return 'N/A%';
+  }
+  return (value * 100).toFixed(1) + '%';
+};
 
 export default function OperatorHome() {
   const router = useRouter();
@@ -258,8 +273,8 @@ export default function OperatorHome() {
             <View key={index} style={styles.situationCard}>
               <Text style={styles.trainId}>🚂 {situation.train_id}</Text>
               <Text>Section: {situation.current_section}</Text>
-              <Text>Conflict Risk: {(situation.conflict_probability * 100).toFixed(1)}%</Text>
-              <Text>Delay: {situation.delay_prediction.toFixed(1)} min</Text>
+              <Text>Conflict Risk: {safePercentage(situation.conflict_probability)}</Text>
+              <Text>Delay: {safeToFixed(situation.delay_prediction, 1, ' min')}</Text>
               {situation.needs_immediate_attention && (
                 <Text style={styles.urgentText}>⚠️ IMMEDIATE ATTENTION REQUIRED</Text>
               )}
@@ -293,9 +308,9 @@ export default function OperatorHome() {
             <Text>Route: {train.from_station} → {train.to_station}</Text>
             <Text>Section: {train.current_section}</Text>
             <Text>Type: {train.train_type}</Text>
-            <Text>Delay: {train.last_delay_pred.toFixed(1)} min</Text>
-            <Text>Conflict Risk: {(train.last_conflict_prob * 100).toFixed(1)}%</Text>
-            <Text>Last Check: {new Date(train.last_check).toLocaleTimeString()}</Text>
+            <Text>Delay: {safeToFixed(train.last_delay_pred, 1, ' min')}</Text>
+            <Text>Conflict Risk: {safePercentage(train.last_conflict_prob)}</Text>
+            <Text>Last Check: {train.last_check ? new Date(train.last_check).toLocaleTimeString() : 'Never'}</Text>
             
             <View style={styles.actionButtons}>
               <TouchableOpacity 

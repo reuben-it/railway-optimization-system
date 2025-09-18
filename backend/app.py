@@ -437,6 +437,14 @@ async def startup_event():
     """Load models and initialize continuous prediction system on startup."""
     load_models()
     initialize_prediction_system()
+    
+    # Auto-populate default trains for demo/testing
+    try:
+        from auto_populate_trains import ensure_minimum_trains
+        ensure_minimum_trains(prediction_engine, min_trains=5)
+    except Exception as e:
+        logger.warning(f"Failed to auto-populate trains: {e}")
+        logger.info("System will start without default trains")
 
 @app.on_event("shutdown")
 async def shutdown_event():
